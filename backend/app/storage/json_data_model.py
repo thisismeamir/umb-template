@@ -107,7 +107,7 @@ class ExampleEntity(BaseEntityData):
     raw_metadata: dict[str, Any] = Field(default_factory=dict, exclude=True)
 
     @field_validator(
-        "title",
+        "name",
         "description",
         "comment",
         "status",
