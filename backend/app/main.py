@@ -1,26 +1,43 @@
-"""
-This is the main FastAPI application file, which orchestrates the API,
-database connections, and data processing modules.
-"""
+# -----------------------------------------------------------------------------
+#  FCC-Physics-Event : API Version 1
+#
+#  Copyright (c) 2026 CERN — Apache License 2.0
+#  Developer: Kid A  |  amir.ebh@cern.ch
+# -----------------------------------------------------------------------------
 
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, Request, status
-from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import JSONResponse, Response
+
+# ------------------------------------------------------------------
+# Internal imports
+# ------------------------------------------------------------------
+
+from app.api.middleware.cors import build_cors_middleware
+from app.api.middleware.logging import LoggingMiddleware
+from app.api.middleware.timing import TimingMiddleware
 
 from app.routers import auth_router
 from app.routers import entities_router as entities_router
 from app.routers import navigation_router as navigation_router
+
 from app.services.file_watcher import FileWatcherService
 from app.storage.database import Database
+
 from app.utils.auth_utils import AUTH_ENABLED, load_cern_endpoints
 from app.utils.config_utils import get_config
 from app.utils.gclql_query_parser_utils import QueryParser
 from app.utils.logging_utils import get_logger, setup_logging
+
+from app.api.v1.apiV1 import ApiV1
+
+# ------------------------------------------------------------------
+# Globals
+# ------------------------------------------------------------------
 
 logger = get_logger(__name__)
 config = get_config()
@@ -29,34 +46,36 @@ database = Database()
 query_parser = QueryParser(database=database)
 file_watcher = FileWatcherService(database=database)
 
+# ------------------------------------------------------------------
+# Lifespan (startup / shutdown)
+# ------------------------------------------------------------------
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> Any:
     """Handles application startup and shutdown events."""
     setup_logging()
 
-    # Run startup tasks sequentially for better reliability
+    # --- Startup ---
     await database.setup(config)
 
-    # Only load CERN endpoints if authentication is enabled
     if AUTH_ENABLED:
         logger.info("Authentication is enabled, loading CERN endpoints...")
         await load_cern_endpoints()
     else:
         logger.info("Authentication is disabled, skipping CERN endpoint loading")
 
-    # Query parser setup depends on database being ready
     await query_parser.setup()
-
-    # Start file watcher service
     await file_watcher.start()
 
     yield
 
-    # Cleanup during shutdown
+    # --- Shutdown ---
     await file_watcher.stop()
     await database.aclose()
 
+# ------------------------------------------------------------------
+# App initialization
+# ------------------------------------------------------------------
 
 app = FastAPI(
     title="Universal Metadata Browser API",
@@ -64,10 +83,23 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# ------------------------------------------------------------------
+# Middleware stack (ORDER MATTERS)
+#
+# Request flow:
+#   CORS → Session → Logging → Timing → route
+#
+# Response flow:
+#   route → Timing → Logging → Session → CORS
+# ------------------------------------------------------------------
 
-# Only add session middleware if auth is enabled
+# 1. CORS (outermost — handles preflight early)
+build_cors_middleware(app)
+
+# 2. Session middleware (only if auth is enabled)
 if AUTH_ENABLED:
     secret_key = config.get("general.application_secret_key")
+
     if not secret_key:
         logger.warning(
             "Auth is enabled but no secret key provided - session middleware disabled"
@@ -82,41 +114,21 @@ if AUTH_ENABLED:
             session_cookie=config.get(
                 "general.cookie_prefix", "universal-metadata-browser"
             ),
-            domain=None,  # Allow cookies to work on localhost and other domains
+            domain=None,
         )
         logger.info("Session middleware enabled")
 else:
     logger.info("Session middleware disabled - auth is disabled")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[config.get("general.frontend_url")],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# 3. Logging
+app.add_middleware(LoggingMiddleware)
 
+# 4. Timing (innermost — closest to route handler)
+app.add_middleware(TimingMiddleware)
 
-@app.middleware("http")
-async def log_requests(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]]
-) -> Response:
-    """Middleware to log incoming requests."""
-    try:
-        response = await call_next(request)
-
-        # Log the request after successful processing
-        logger.info(
-            f"[{response.status_code}] {request.method} {request.url.path} - {request.query_params}"
-            if request.query_params
-            else f"[{response.status_code}] {request.method} {request.url.path}"
-        )
-
-        return response
-    except Exception as e:
-        logger.error(f"Middleware error for {request.method} {request.url.path}: {e}")
-        raise
-
+# ------------------------------------------------------------------
+# Global exception handler
+# ------------------------------------------------------------------
 
 @app.exception_handler(Exception)
 async def validation_exception_handler(
@@ -124,73 +136,35 @@ async def validation_exception_handler(
 ) -> JSONResponse:
     """Catch all unhandled exceptions and return a standardized 500 response."""
     logger.error(
-        f"Unhandled exception for {request.method} {request.url}", exc_info=True
+        f"Unhandled exception for {request.method} {request.url}",
+        exc_info=True,
     )
-
-    # Create standardized error response
-    error_response = {
-        "message": "An internal server error occurred. Please try again later.",
-        "status": 500,
-        "details": {
-            "error": "internal_error",
-            "message": f"Unhandled exception: {str(exc)}",
-        },
-    }
 
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content=error_response,
+        content={
+            "message": "An internal server error occurred. Please try again later.",
+            "status": 500,
+            "details": {
+                "error": "internal_error",
+                "message": f"Unhandled exception: {str(exc)}",
+            },
+        },
     )
 
+# ------------------------------------------------------------------
+# Router dependency initialization
+# ------------------------------------------------------------------
 
-# Initialize router dependencies
 auth_router.init_dependencies(database)
 entities_router.init_dependencies(database, query_parser)
 navigation_router.init_dependencies(database)
 
-# Include routers
+# ------------------------------------------------------------------
+# Routers
+# ------------------------------------------------------------------
+
 app.include_router(auth_router.router)
 app.include_router(entities_router.router)
 app.include_router(navigation_router.router)
-
-
-# Powered by friendship!
-#                                                     /
-#                                                   .7
-#                                        \       , //
-#                                        |\.--._/|//
-#                                       /\ ) ) ).'/
-#                                      /(  \  // /
-#                                     /(   J`((_/ \
-#                                    / ) | _\     /
-#                                   /|)  \  eJ    L
-#                                  |  \ L \   L   L
-#                                 /  \  J  `. J   L
-#                                 |  )   L   \/   \
-#                                /  \    J   (\   /
-#              _....___         |  \      \   \```
-#       ,.._.-'        '''--...-||\     -. \   \
-#     .'.=.'                    `         `.\ [ Y
-#    /   /                                  \]  J
-#   Y / Y                                    Y   L
-#   | | |          \                         |   L
-#   | | |           Y                        A  J
-#   |   I           |                       /I\ /
-#   |    \          I             \        ( |]/|
-#   J     \         /._           /        -tI/ |
-#    L     )       /   /'-------'J           `'-:.
-#    J   .'      ,'  ,' ,     \   `'-.__          \
-#     \ T      ,'  ,'   )\    /|        ';'---7   /
-#      \|    ,'L  Y...-' / _.' /         \   /   /
-#       J   Y  |  J    .'-'   /         ,--.(   /
-#        L  |  J   L -'     .'         /  |    /\
-#        |  J.  L  J     .-;.-/       |    \ .' /
-#        J   L`-J   L____,.-'`        |  _.-'   |
-#         L  J   L  J                  ``  J    |
-#         J   L  |   L                     J    |
-#          L  J  L    \                    L    \
-#          |   L  ) _.'\                    ) _.'\
-#          L    \('`    \                  ('`    \
-#           ) _.'\`-....'                   `-....'
-#          ('`    \
-#           `-.___/   sk
+app.include_router(ApiV1().router)
