@@ -10,6 +10,7 @@ dependencies = [
     "pydantic-settings",
     "asyncpg<1.0,>=0.30",
     "lark>=1.2.2",
+    "pytest",
     "structlog>=25.4.0",
     "pyhocon>=0.3.61",
     "fastapi-oidc>=0.0.10",
