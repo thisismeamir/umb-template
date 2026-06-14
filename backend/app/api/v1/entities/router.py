@@ -8,7 +8,7 @@ from .detail import EventDetailRouter
 
 class EventsRouter:
     def __init__(self):
-        self._router = APIRouter(prefix="/events", tags=["events"])
+        self._router = APIRouter(prefix="/entities", tags=["entities"])
 
         self._router.include_router(EventListRouter().router)
         self._router.include_router(EventQueryRouter().router)

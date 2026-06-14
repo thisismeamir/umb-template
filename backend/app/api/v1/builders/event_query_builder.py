@@ -46,7 +46,7 @@ class EventQueryBuilder:
     def from_list(event_list: list[str], separator: str) -> EventQuery:
         """
         Transform a list into an Event Query object.
-        Assuming that the list is of strings with <field-key><separator><field-value> type.
+        Assuming that the list is of strings with <field-key><separator><field-unary> type.
         We make a dictionary out of it and then pass to from_dict function.
         :param separator:
         :param event_list:
