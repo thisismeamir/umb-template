@@ -5,27 +5,26 @@
 #  Developer: Kid A  |  amir.ebh@cern.ch
 # -----------------------------------------------------------------------------
 
-from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, Request, status
 from starlette.middleware.sessions import SessionMiddleware
-from starlette.responses import JSONResponse, Response
+from starlette.responses import JSONResponse
 
 # ------------------------------------------------------------------
 # Internal imports
 # ------------------------------------------------------------------
 
-from app.api.middleware.cors import build_cors_middleware
-from app.api.middleware.logging import LoggingMiddleware
-from app.api.middleware.timing import TimingMiddleware
+from app.middleware import build_cors_middleware
+from app.middleware import LoggingMiddleware
+from app.middleware import TimingMiddleware
 
 from app.routers import auth_router
 from app.routers import entities_router as entities_router
 from app.routers import navigation_router as navigation_router
 
-from app.services.file_watcher import FileWatcherService
+from backend.app.workers.file_watcher import FileWatcherService
 from app.storage.database import Database
 
 from app.utils.auth_utils import AUTH_ENABLED, load_cern_endpoints
@@ -52,7 +51,7 @@ file_watcher = FileWatcherService(database=database)
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> Any:
-    """Handles application startup and shutdown events."""
+    """Handles application startup and shutdown entities."""
     setup_logging()
 
     # --- Startup ---

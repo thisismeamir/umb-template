@@ -30,15 +30,21 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # Application
     # ------------------------------------------------------------------
-    app_name    : str  = "fcc-physics-events"
+    app_name    : str  = "fcc-physics-entities"
     api_version : str  = "v1"
     debug       : bool = False
 
     # ------------------------------------------------------------------
     # Database
     # ------------------------------------------------------------------
-    database_url : str = "sqlite+aiosqlite:///./dev.db"  # override in production
-
+    databaseUser : str = "username"
+    databasePassword : str = "password"
+    databaseHost : str = "localhost"
+    databasePort : int = 5432
+    databaseDatabase : str = "postgres"
+    databaseSchemaPath: str = "app/database/schema.sql"
+    databaseSchemaAdvisoryLock : int = 1234567890
+    databaseUrl : str =  f"postgresql://{databaseUser}:{databasePassword}@{databaseHost}:{databasePort}/"
     # ------------------------------------------------------------------
     # CORS
     # ------------------------------------------------------------------
@@ -63,6 +69,6 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """
     Cached so the .env file is read once per process, not per request.
-    Call get_settings.cache_clear() in tests to reset between cases.
+    Call get_settings.cache_clear() in test to reset between cases.
     """
     return Settings()
