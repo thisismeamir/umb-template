@@ -1,7 +1,7 @@
 from app.api.dependencies import Api
+from app.api.v1.entities.router import EntityRouter
+from app.api.v1.general.HealthRouter import HealthRouter
 from app.config import Settings
-from app.routers import entities_router
-
 
 class ApiV1(Api):
     """
@@ -11,4 +11,5 @@ class ApiV1(Api):
     def __init__(self):
         self.version = "v1"
         super().__init__(version="v1", latest_version=Settings().api_version)
-        self.router.include_router(entities_router.router)
+        self.router.include_router(EntityRouter().router)
+        self.router.include_router(HealthRouter().router)
