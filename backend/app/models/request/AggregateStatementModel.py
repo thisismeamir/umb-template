@@ -2,6 +2,8 @@ from enum import Enum
 
 from pydantic import BaseModel
 
+from app.models.request.PathTrees import MetadataPathTree
+
 
 class AggregateFunction(Enum):
     SUM = 'sum'
@@ -11,5 +13,5 @@ class AggregateFunction(Enum):
     COUNT = 'count'
 
 class AggregateStatementModel(BaseModel):
-    by: str
+    by: MetadataPathTree
     fn: AggregateFunction
