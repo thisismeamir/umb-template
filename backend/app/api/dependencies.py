@@ -6,12 +6,15 @@
 
 from enum import Enum
 from typing import Protocol, Dict, Iterable, Optional
+
+import asyncpg
 from fastapi import APIRouter, FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.params import Depends
 from starlette.types import ASGIApp
 
-from app.services.event_service import EventsService
+from app.config import Settings
+from app.services.entity.EntityService import EntityService
 
 
 # -----------------------------------------------------------------------------
@@ -86,14 +89,13 @@ class Api:
         self,
         version: str,
         *,
-        prefix: str = "/api",
+        prefix: str = "/",
         state: ApiState = ApiState.ACTIVE,
         latest_version: str,
         dependencies: Optional[Iterable[Depends]] = None,
     ) -> None:
 
         self.version = version
-        self.prefix = f"{prefix}/{version}"
         self.state = state
         self.latest_version = latest_version
         self.dependencies = list(dependencies or [])
@@ -105,7 +107,7 @@ class Api:
         if self.state == ApiState.SUNSET:
             # All requests → 410
             self._router = APIRouter(
-                prefix=self.prefix,
+                prefix="",
                 dependencies=[
                     Depends(_reject_sunset(self.version, self.latest_version))
                 ],
@@ -114,7 +116,7 @@ class Api:
 
         else:
             self._router = APIRouter(
-                prefix=self.prefix,
+                prefix="",
                 dependencies=self.dependencies,
                 deprecated=(self.state == ApiState.DEPRECATED),
             )
@@ -161,7 +163,12 @@ class Api:
         Returns this API as an isolated sub-application.
         Strong isolation for deprecated/sunset versions.
         """
-        sub = FastAPI(title=f"API {self.version}")
+        sub = FastAPI(
+            title=f"API {self.version}",
+            docs_url="/docs",
+            redoc_url="/redoc",
+            openapi_url="/openapi.json"
+        )
 
         if self.state == ApiState.SUNSET:
             @sub.middleware("http")
@@ -192,8 +199,22 @@ class Api:
 
 
 # -----------------------------------------------------------------------------
-# Dependency to retrieve the EventService Implementation
+# Dependency to retrieve the EntityService Implementation
 # -----------------------------------------------------------------------------
-def get_events_service() -> EventsService:
+def get_events_service() -> EntityService:
     # replace with real implementation
-    raise EventsServiceImpl
+    return EntityService()
+
+async def get_db() -> asyncpg.Connection:
+    settings = Settings()
+    conn = await asyncpg.connect(
+        host=settings.databaseHost,
+        port=settings.databasePort,
+        user=settings.databaseUser,
+        password=settings.databasePassword,
+        database=settings.databaseDatabase
+    )
+    try:
+        yield conn
+    finally:
+        await conn.close()
