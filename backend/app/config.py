@@ -16,6 +16,7 @@ Usage:
 """
 from functools import lru_cache
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -37,14 +38,17 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # Database
     # ------------------------------------------------------------------
-    databaseUser : str = "username"
-    databasePassword : str = "password"
-    databaseHost : str = "localhost"
+    databaseUser : str = "admin"
+    databasePassword : str = "admin"
+    databaseHost: str = Field("localhost", alias="METADATA_BROWSER_POSTGRES_HOST")
     databasePort : int = 5432
     databaseDatabase : str = "postgres"
     databaseSchemaPath: str = "app/database/schema.sql"
     databaseSchemaAdvisoryLock : int = 1234567890
-    databaseUrl : str =  f"postgresql://{databaseUser}:{databasePassword}@{databaseHost}:{databasePort}/"
+
+    @property
+    def databaseUrl(self) -> str:
+        return f"postgresql://{self.databaseUser}:{self.databasePassword}@{self.databaseHost}:{self.databasePort}/{self.databaseDatabase}"
     # ------------------------------------------------------------------
     # CORS
     # ------------------------------------------------------------------
@@ -64,6 +68,7 @@ class Settings(BaseSettings):
     broker_url   : str = "redis://localhost:6379/0"
     result_backend: str = "redis://localhost:6379/1"
 
+    fileWatcherRoot: str = "app/storage/data"
 
 @lru_cache
 def get_settings() -> Settings:
