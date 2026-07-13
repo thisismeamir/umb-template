@@ -1,91 +1,206 @@
-Here's the complete specification:
-
----
-
 # UMB Request Model
-UMB Request Model is a JSON-based domain specific language that enables users, software and third-party implementations to have readability, accessibility and fluency in their requests.
-The model at core is based on three main modules, which are then abstracted by a single request model layer. This is done to make sure that the client can retrieve exactly the data they need and have their conditional scenarios implemented right inside the request, instead of requesting a bulk of metadata and filtering it on the client side.
 
-## Core Structure
-The fundamental units in every request are:
-1. Fields that the client needs present in or absent from the response;
-2. Filters that constrain the metadata based on the values of its keys;
-3. Options that operate on the resulting collection before it is returned.
+The UMB Request Model is a JSON-based domain-specific language that enables users, software, and third-party implementations to express rich metadata queries in a readable, accessible, and composable manner.
 
-Each of these units can be filled with different clauses, described one by one below.
+The model is built around three core concepts:
 
----
+1. **Fields**, which describe the metadata that must exist, must not exist, or should be returned.
+2. **Filters**, which constrain entries based on metadata values.
+3. **Options**, which shape the resulting collection after matching.
 
-## Fields
-A general model of metadata can be regarded as a map of keys and values:
-```text
-Metadata : Key (String) -> Value (Any Type)
-```
-Field clauses operate on the keys of metadata — either requiring their presence, requiring their absence, or selecting which keys to include in the response payload.
-
-### `contains`
-Requires that returned entries contain all specified keys, regardless of their values.
-```json
-{
-    "contains": ["ecm", "event_number"]
-}
-```
-> Give me entries that have both `ecm` and `event_number` defined.
-
-### `without`
-Requires that returned entries do not contain any of the specified keys.
-```json
-{
-    "without": ["simulation", "test"]
-}
-```
-> Give me entries that have neither `simulation` nor `test` defined.
-
-### `take`
-Selects which keys to include in the response payload. Entries are still fetched in full from the database; only the specified keys are returned to the client. Useful for reducing response size when only a subset of metadata is needed.
-```json
-{
-    "take": ["ecm", "campaign", "source"]
-}
-```
-> Give me only the `ecm`, `campaign` and `source` fields of each matched entry.
+Unlike traditional query languages that treat metadata as a flat map, the UMB Request Model assumes metadata is a hierarchical tree. Consequently, every metadata-oriented clause mirrors the structure of the metadata itself.
 
 ---
 
-## Filters
-Filters constrain the returned entries based on the values of their metadata keys. Unlike fields, which operate on key presence or absence, filters evaluate the value stored under a key against a condition.
+# Metadata Model
 
-A filter is expressed as a key paired with a condition string inside the `where` clause:
+Metadata is regarded as a hierarchical structure of nested objects and values.
+
 ```text
-"key": "<operator><value>"
+Metadata ::= Value
+           | Object<String, Metadata>
 ```
 
-### Operators
-| Operator | Meaning |
-|---|---|
-| `=` | Equal |
-| `!=` | Not equal |
-| `>` | Greater than |
-| `<` | Less than |
-| `>=` | Greater than or equal |
-| `<=` | Less than or equal |
-| `~` | Fuzzy match |
-| `:in[...]` | Value is one of a set |
+Metadata is therefore identified by **metadata paths**.
 
-### `where`
-The primary filter clause. Each key in the `where` object is a metadata key, and its value is a condition string.
+Examples:
+
+```text
+ecm
+parent.ecm
+parent.generator.version
+```
+
+Rather than writing paths explicitly, the request model represents them naturally through nested JSON objects. Every nested object corresponds to another level of metadata.
+
+For example, the metadata
+
+```json
+{
+    "ecm": 13.6,
+    "parent": {
+        "generator": {
+            "name": "Pythia",
+            "version": "8.3"
+        }
+    }
+}
+```
+
+is addressed in the request language using the same hierarchy.
+
+---
+
+# Core Structure
+
+Every request consists of a combination of:
+
+* Entry selection
+* Fields
+* Filters
+* Options
+
+Each section is independent and composable.
+
+---
+
+# Fields
+
+Field clauses operate on the presence or absence of metadata paths and determine which metadata should be returned.
+
+---
+
+## `contains`
+
+Requires that returned entries contain every specified metadata path.
+
+```json
+{
+    "contains": {
+        "ecm": {},
+        "parent": {
+            "generator": {
+                "version": {}
+            }
+        }
+    }
+}
+```
+
+> Return entries containing both `ecm` and `parent.generator.version`.
+
+---
+
+## `without`
+
+Requires that returned entries do not contain any of the specified metadata paths.
+
+```json
+{
+    "without": {
+        "simulation": {},
+        "parent": {
+            "private": {}
+        }
+    }
+}
+```
+
+> Return entries that do not contain `simulation` nor `parent.private`.
+
+---
+
+## `take`
+
+Selects which metadata should be included in the response payload.
+
+Entries are still retrieved in full from the database. The `take` clause only affects the metadata returned to the client.
+
+```json
+{
+    "take": {
+        "ecm": {},
+        "campaign": {},
+        "parent": {
+            "generator": {
+                "name": {}
+            }
+        }
+    }
+}
+```
+
+Returned metadata preserves the requested hierarchy.
+
+Example response:
+
+```json
+{
+    "ecm": 13.6,
+    "campaign": "Run3",
+    "parent": {
+        "generator": {
+            "name": "Pythia"
+        }
+    }
+}
+```
+
+---
+
+# Filters
+
+Filters constrain returned entries according to the values stored at metadata paths.
+
+A filter is expressed as a metadata tree whose leaves are condition strings.
+
+```text
+"path": "<operator><value>"
+```
+
+---
+
+## Operators
+
+| Operator   | Meaning                |
+| ---------- | ---------------------- |
+| `=`        | Equal                  |
+| `!=`       | Not equal              |
+| `>`        | Greater than           |
+| `<`        | Less than              |
+| `>=`       | Greater than or equal  |
+| `<=`       | Less than or equal     |
+| `~`        | Fuzzy match            |
+| `:in[...]` | Value belongs to a set |
+
+---
+
+## `where`
+
+The primary filtering clause.
+
+Each nested object represents another level in the metadata hierarchy. Condition strings always appear at leaf nodes.
+
 ```json
 {
     "where": {
         "ecm": ">10",
         "source": "=DIRAC",
-        "campaign": "~LHC_2024"
+        "parent": {
+            "generator": {
+                "version": "=8.3"
+            }
+        }
     }
 }
 ```
-> Give me entries where `ecm` is greater than 10, `source` is exactly DIRAC, and `campaign` fuzzy-matches LHC_2024.
 
-Multiple conditions on the same key are expressed in a single string:
+> Return entries where `ecm` is greater than 10, `source` equals DIRAC, and `parent.generator.version` equals 8.3.
+
+---
+
+Multiple conditions can be combined in a single expression.
+
 ```json
 {
     "where": {
@@ -93,9 +208,13 @@ Multiple conditions on the same key are expressed in a single string:
     }
 }
 ```
-> Give me entries where `ecm` is between 10 and 100 or No key/value for ecm field.
 
-A set condition uses `:in[...]` syntax:
+> Return entries where `ecm` is between 10 and 100, or where the field is absent.
+
+---
+
+A set condition uses `:in[...]`.
+
 ```json
 {
     "where": {
@@ -103,9 +222,13 @@ A set condition uses `:in[...]` syntax:
     }
 }
 ```
-> Give me entries where `source` is one of DIRAC, RUCIO or CMS.
 
-The wildcard key `*` applies a condition across all metadata keys:
+> Return entries whose source is one of DIRAC, RUCIO, or CMS.
+
+---
+
+The wildcard `*` applies a condition across all metadata values.
+
 ```json
 {
     "where": {
@@ -113,94 +236,148 @@ The wildcard key `*` applies a condition across all metadata keys:
     }
 }
 ```
-> Give me entries where any metadata value is greater than or equal to 302.
 
-### `search`
-Full-text fuzzy search across all metadata values at once, without specifying a key.
-```json
-{
-    "search": "proton collision 3.5"
-}
-```
-> Give me entries whose metadata contains values resembling `proton collision 3.5`.
+> Return entries where any metadata value is greater than or equal to 302.
 
 ---
 
-## Options
-Options operate on the collection of matched entries after the database query is resolved. They do not affect which entries are matched — only how the resulting collection is shaped, ordered and returned.
+## `search`
 
-### `get`
-Controls how many entries are returned and the selection strategy.
-
-| Sub-key | Meaning |
-|---|---|
-| `first` | First N entries |
-| `last` | Last N entries |
-| `random` | N entries sampled randomly |
-| `uniform` | N entries sampled uniformly across the result space |
+Performs a fuzzy full-text search across all metadata values.
 
 ```json
 {
-    "get": {"random": 100}
+    "search": "proton collision 13.6"
 }
 ```
-> From the matched entries, return 100 sampled at random.
 
-### `sort`
-Sorts the matched entries by a metadata key before returning.
+> Return entries whose metadata resembles "proton collision 13.6".
 
-| Sub-key | Meaning |
-|---|---|
-| `by` | The key to sort by |
+---
+
+# Options
+
+Options operate on the matched collection after filtering.
+
+They never affect which entries match.
+
+---
+
+## `get`
+
+Controls how many entries are returned and how they are selected.
+
+| Sub-key   | Meaning                                |
+| --------- | -------------------------------------- |
+| `first`   | First N entries                        |
+| `last`    | Last N entries                         |
+| `random`  | Random sample of N entries             |
+| `uniform` | Uniform sample across the result space |
+
+```json
+{
+    "get": {
+        "random": 100
+    }
+}
+```
+
+---
+
+## `sort`
+
+Sorts matched entries by a metadata path.
+
+```json
+{
+    "sort": {
+        "by": {
+            "parent": {
+                "ecm": {}
+            }
+        },
+        "order": "desc"
+    }
+}
+```
+
+| Sub-key | Meaning         |
+| ------- | --------------- |
+| `by`    | Metadata path   |
 | `order` | `asc` or `desc` |
 
-```json
-{
-    "sort": {"by": "ecm", "order": "desc"}
-}
-```
-`sort` and `get` compose — sorting is applied before selection, so `random` draws from a sorted pool if both are present.
+Sorting is performed before `get`.
 
-### `page`
-Paginates the response using cursor-based pagination.
+---
 
-| Sub-key | Meaning |
-|---|---|
-| `size` | Number of entries per page |
-| `cursor` | ID of the last seen entry from the previous page |
+## `page`
+
+Cursor-based pagination.
+
+| Sub-key  | Meaning          |
+| -------- | ---------------- |
+| `size`   | Entries per page |
+| `cursor` | Last seen entry  |
 
 ```json
 {
-    "page": {"size": 10, "cursor": "uuid-here"}
+    "page": {
+        "size": 10,
+        "cursor": "uuid-here"
+    }
 }
 ```
 
-### `aggregate`
-Computes a scalar value over a metadata key across all matched entries instead of returning the entries themselves.
+---
 
-| Sub-key | Meaning |
-|---|---|
-| `by` | The key to aggregate over |
-| `fn` | `count`, `avg`, `min`, `max`, `sum` |
+## `aggregate`
+
+Computes an aggregate over a metadata path.
+
+| Sub-key | Meaning                             |
+| ------- | ----------------------------------- |
+| `by`    | Metadata path                       |
+| `fn`    | `count`, `avg`, `min`, `max`, `sum` |
 
 ```json
 {
-    "aggregate": {"by": "ecm", "fn": "avg"}
+    "aggregate": {
+        "by": {
+            "parent": {
+                "ecm": {}
+            }
+        },
+        "fn": "avg"
+    }
 }
 ```
-> Return the average value of `ecm` across all matched entries.
 
-### `distinct`
-Returns all unique values of a single metadata key across matched entries instead of returning the entries themselves.
+> Return the average value of `parent.ecm`.
+
+---
+
+## `distinct`
+
+Returns every unique value for a metadata path.
+
 ```json
 {
-    "distinct": "source"
+    "distinct": {
+        "parent": {
+            "generator": {
+                "name": {}
+            }
+        }
+    }
 }
 ```
-> Return all unique values of `source` across matched entries.
 
-### `count`
-Returns only the count of matched entries, not the entries themselves.
+---
+
+## `count`
+
+Returns only the number of matched entries.
+
 ```json
 {
     "count": true
@@ -209,49 +386,78 @@ Returns only the count of matched entries, not the entries themselves.
 
 ---
 
-## Entry Selection
-Beyond fields and filters, the following top-level keys target specific entries or versions directly.
+# Entry Selection
 
-### `entry_type`
-Constrains the query to one or more entry types.
+These clauses target specific entries independently of metadata filtering.
+
+---
+
+## `entry_type`
+
+Restricts the query to one or more entry types.
+
 ```json
 {
     "entry_type": "collision"
 }
 ```
+
 ```json
 {
-    "entry_type": ["collision", "beam_config"]
+    "entry_type": [
+        "collision",
+        "beam_config"
+    ]
 }
 ```
 
-### `id`
-Targets a specific entry by its UUID.
+---
+
+## `id`
+
+Targets a specific entry.
+
 ```json
 {
     "id": "uuid-here"
 }
 ```
 
-### `version`
-Targets a specific version of an entry. Bypasses the default `is_current` filter.
+---
+
+## `version`
+
+Targets a specific version of an entry.
+
 ```json
 {
     "version": 3
 }
 ```
 
-### `versions`
-Returns the last N versions of a specific entry.
+This bypasses the default `is_current` filter.
+
+---
+
+## `versions`
+
+Returns multiple versions of an entry.
+
 ```json
 {
     "id": "uuid-here",
-    "versions": {"last": 5}
+    "versions": {
+        "last": 5
+    }
 }
 ```
 
-### `snapshot`
-Returns entries as they existed at a specific point in time, using version history.
+---
+
+## `snapshot`
+
+Returns entries exactly as they existed at a given time.
+
 ```json
 {
     "snapshot": "2024-06-01T00:00:00Z"
@@ -260,21 +466,58 @@ Returns entries as they existed at a specific point in time, using version histo
 
 ---
 
-## Full Example
+# Complete Example
+
 ```json
 {
     "entry_type": "collision",
+
     "where": {
-        "ecm": ">10 <100",
-        "source": ":in[DIRAC, RUCIO]"
+        "ecm": ">10 and <100",
+        "source": ":in[DIRAC, RUCIO]",
+        "parent": {
+            "generator": {
+                "version": "=8.3"
+            }
+        }
     },
-    "contains": ["campaign", "event_number"],
-    "without": ["simulation"],
-    "take": ["ecm", "campaign", "source"],
-    "get": {"random": 100},
-    "sort": {"by": "ecm", "order": "desc"},
-    "page": {"size": 10, "cursor": "uuid-here"}
+
+    "contains": {
+        "campaign": {},
+        "event_number": {}
+    },
+
+    "without": {
+        "simulation": {}
+    },
+
+    "take": {
+        "ecm": {},
+        "campaign": {},
+        "source": {},
+        "parent": {
+            "generator": {
+                "name": {}
+            }
+        }
+    },
+
+    "sort": {
+        "by": {
+            "ecm": {}
+        },
+        "order": "desc"
+    },
+
+    "get": {
+        "random": 100
+    },
+
+    "page": {
+        "size": 10,
+        "cursor": "uuid-here"
+    }
 }
 ```
-> From collision entries where `ecm` is between 10 and 100, source is DIRAC or RUCIO, and both `campaign` and `event_number` are present, excluding any with `simulation` defined — return 100 random entries sorted by `ecm` descending, showing only `ecm`, `campaign` and `source`, paginated at 10 per page.
 
+> From collision entries where `ecm` is between 10 and 100, `source` is either DIRAC or RUCIO, and `parent.generator.version` is 8.3; require the presence of `campaign` and `event_number`, exclude entries containing `simulation`, return only the selected metadata, sort by `ecm` descending, randomly sample 100 entries, and paginate the results in pages of 10.
