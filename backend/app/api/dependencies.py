@@ -13,8 +13,10 @@ from fastapi.responses import JSONResponse
 from fastapi.params import Depends
 from starlette.types import ASGIApp
 
-from app.config import Settings
+from app.config import get_settings
+from app.models.entity.EntityRoute import EntityRoute
 from app.services.entity.EntityService import EntityService
+from app.repositories.entry.EntryRepository import EntryRepository
 
 
 # -----------------------------------------------------------------------------
@@ -198,23 +200,33 @@ class Api:
         }
 
 
-# -----------------------------------------------------------------------------
-# Dependency to retrieve the EntityService Implementation
-# -----------------------------------------------------------------------------
-def get_events_service() -> EntityService:
-    # replace with real implementation
-    return EntityService()
 
-async def get_db() -> asyncpg.Connection:
-    settings = Settings()
-    conn = await asyncpg.connect(
-        host=settings.databaseHost,
-        port=settings.databasePort,
-        user=settings.databaseUser,
-        password=settings.databasePassword,
-        database=settings.databaseDatabase
-    )
-    try:
-        yield conn
-    finally:
-        await conn.close()
+class Provider:
+
+    @staticmethod
+    async def _makeConn() -> asyncpg.Connection:
+        settings = get_settings()
+        return await asyncpg.connect(
+            host=settings.databaseHost,
+            port=settings.databasePort,
+            user=settings.databaseUser,
+            password=settings.databasePassword,
+            database=settings.databaseDatabase
+        )
+
+    @staticmethod
+    async def entryRepository() -> EntryRepository:
+        conn = await Provider._makeConn()
+        repo = EntryRepository(conn)
+        try:
+            yield repo
+        finally:
+            await conn.close()
+
+    @staticmethod
+    def serviceFor(route: EntityRoute):
+        async def dependency(
+            repository: EntryRepository = Depends(Provider.entryRepository)
+        ) -> EntityService:
+            return EntityService(route=route, repository=repository)
+        return dependency
