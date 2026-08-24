@@ -1,25 +1,19 @@
 from fastapi import APIRouter
-from app.config import Settings
+from app.config import Settings, get_settings
+from app.models.response.response import ApiInformation, Response, ValidationResult
 
 class HealthRouter(APIRouter):
     def __init__(self):
         super().__init__()
-        self._router = APIRouter(prefix="/health", tags=["system"])
-
+        self._router = APIRouter(prefix="/check", tags=["system"])
+        self._settings = get_settings()
+        self.apiinfo = ApiInformation(version=self._settings.api_version)
         @self._router.get("/")
         async def health():
-            return {"status": "ok"}
-
-        @self._router.get("/version")
-        async def version():
-            return {
-                "version": Settings().api_version,
-                "status": "ok"
-            }
-
-        @self._router.get("/ping")
-        async def ping():
-            return {"ping": "pong"}
+            return Response(
+            apiInformation=self.apiinfo,
+            validationResult=ValidationResult()
+            )
 
     @property
     def router(self) -> APIRouter:
