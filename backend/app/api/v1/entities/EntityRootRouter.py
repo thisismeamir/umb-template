@@ -1,15 +1,17 @@
-# api/v1/entities/EntityRootRouter.py
-
 from fastapi import APIRouter, Depends
-
+from app.api.dependencies import Provider
 from app.models.entity.EntityRoute import EntityRoute
 from app.models.request.EntityRequestModel import EntityRequestModel
+
 from app.services.entity.EntityService import EntityService
+from app.repositories.entry.EntryRepository import EntryRepository
 
 
 def makeServiceFor(route: EntityRoute):
-    def dependency() -> EntityService:
-        return EntityService(route=route)
+    async def dependency(
+        repository: EntryRepository = Depends(Provider.entryRepository)
+    ) -> EntityService:
+        return EntityService(route=route, repository=repository)
     return dependency
 
 
