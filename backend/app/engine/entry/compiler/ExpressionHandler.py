@@ -1,5 +1,6 @@
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
+from pydantic_core.core_schema import ErrorType
 
 from app.engine.entry.grammar.EntryFilterLexer import EntryFilterLexer
 from app.engine.entry.grammar.EntryFilterParser import EntryFilterParser
@@ -10,6 +11,7 @@ from app.models.request.where.unary.Operator import Operator
 from app.models.request.where.unary.UnaryStatement import UnaryStatement
 from app.models.request.where.unary.Value import Value, ValueType
 
+    
 
 class ExpressionHandler:
     def __init__(self, raw: str):

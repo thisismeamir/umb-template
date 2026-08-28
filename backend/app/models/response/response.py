@@ -46,7 +46,7 @@ class VersionSummary(BaseModel):
 class Response(BaseModel):
     apiInformation: ApiInformation
     validationResult: ValidationResult
-
+    status: str | None = "ok"
     # Normal query
     entities: list[dict[str, Any]] | None = None
     returned: int | None = None

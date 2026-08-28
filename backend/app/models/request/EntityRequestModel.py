@@ -1,8 +1,9 @@
 from __future__ import annotations
 from pydantic import BaseModel
 
+from pydantic import model_validator
 from app.models.request.AggregateStatementModel import AggregateStatementModel
-from app.models.request.EntrySelectionStatementVersionsModel import EntrySelectionStatementVersionsModel
+from app.models.request.EntrySelectionStatementVersionsModel import EntryRequestVersionsModel
 from app.models.request.GetStatementModel import GetStatementModel
 from app.models.request.PaginationStatementModel import PaginationStatementModel
 from app.models.request.PathTrees import MetadataPathTree, MetadataConditionTree
@@ -28,10 +29,8 @@ class EntityRequestModel(BaseModel):
     entry_type: list | None = None
     id: str | None = None
     version: str | None = None
-    versions: EntrySelectionStatementVersionsModel | None = None
+    versions: EntryRequestVersionsModel | None = None
     snapshot: str | None = None
-
-    from pydantic import model_validator
 
     @model_validator(mode="after")
     def validateTrees(self) -> EntityRequestModel:
@@ -40,6 +39,3 @@ class EntityRequestModel(BaseModel):
         if self.where is not None:
             conditionTreeToList(self.where)  # raises TypeError if malformed
         return self
-
-    
-

@@ -16,7 +16,7 @@ from starlette.types import ASGIApp
 from app.config import get_settings
 from app.models.entity.EntityRoute import EntityRoute
 from app.services.entity.EntityService import EntityService
-from app.repositories.entry.EntryRepository import EntryRepository
+from app.repositories.entry.EntityRepository import EntityRepository
 
 
 # -----------------------------------------------------------------------------
@@ -215,9 +215,9 @@ class Provider:
         )
 
     @staticmethod
-    async def entryRepository() -> EntryRepository:
+    async def entryRepository() -> EntityRepository:
         conn = await Provider._makeConn()
-        repo = EntryRepository(conn)
+        repo = EntityRepository(conn)
         try:
             yield repo
         finally:
@@ -226,7 +226,7 @@ class Provider:
     @staticmethod
     def serviceFor(route: EntityRoute):
         async def dependency(
-            repository: EntryRepository = Depends(Provider.entryRepository)
+            repository: EntityRepository = Depends(Provider.entryRepository)
         ) -> EntityService:
             return EntityService(route=route, repository=repository)
         return dependency

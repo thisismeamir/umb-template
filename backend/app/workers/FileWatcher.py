@@ -22,6 +22,8 @@ class FileWatcher:
     async def _scan(self) -> None:
         for file in self.root.glob("*.json"):
             await self._processFile(file)
+        for file in self.processed.glob("*.json"):
+            await self._processFile(file)
 
     async def _watch(self) -> None:
         seen = set(self.root.glob("*.json"))

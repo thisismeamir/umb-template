@@ -48,8 +48,16 @@ def conditionTreeToList(conditionTree: dict) -> list[tuple[list[str], str]]:
     return entries
 
 
+
+
 if __name__ == '__main__':
     # A testing nested dictionary
-    pathTree = {}
+    pathTree = {
+        "Root": {
+            "Child 1": {
+                "Child 2": "something else"
+            }
+        }
+    }
 
-    print(pathTreeToList(pathTree))
+    print(conditionTreeToList(pathTree))

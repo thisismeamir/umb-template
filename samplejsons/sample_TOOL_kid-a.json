@@ -1,0 +1,242 @@
+[
+  {
+    "name": "deep_nested_process",
+    "process": {
+      "initial_state": {
+        "beam1": {
+          "particle": "electron",
+          "energy": 182.5,
+          "polarization": {
+            "longitudinal": -0.8,
+            "transverse": 0.0
+          }
+        },
+        "beam2": {
+          "particle": "positron",
+          "energy": 182.5,
+          "polarization": {
+            "longitudinal": 0.8,
+            "transverse": 0.0
+          }
+        }
+      },
+      "final_state": {
+        "topology": "4-fermion",
+        "decay_chain": {
+          "Z": {
+            "decay": "bb",
+            "branching_ratio": 0.1512,
+            "daughters": {
+              "b": {"pdg_id": 5, "status": 23},
+              "bbar": {"pdg_id": -5, "status": 23}
+            }
+          },
+          "H": {
+            "decay": "WW*",
+            "branching_ratio": 0.2137,
+            "daughters": {
+              "W1": {
+                "decay": "lnu",
+                "daughters": {
+                  "lepton": {"pdg_id": 11, "status": 23},
+                  "neutrino": {"pdg_id": 12, "status": 23}
+                }
+              },
+              "W2": {
+                "decay": "qq",
+                "daughters": {
+                  "q": {"pdg_id": 2, "status": 23},
+                  "qbar": {"pdg_id": -2, "status": 23}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "mixed_types_nightmare",
+    "ecm": "365",
+    "n_events": "1200000",
+    "is_signal": "true",
+    "cross_section": 3.658e-04,
+    "tags": ["signal", "higgs", "ZH", "run3", "priority-1"],
+    "flags": {
+      "is_signal": true,
+      "is_simulation": true,
+      "is_validated": false,
+      "is_published": null,
+      "is_private": false
+    },
+    "counts": [0, 1, 2, 3, 0, 0, 12, 0],
+    "matrix": [
+      [1.0, 0.0, 0.0],
+      [0.0, 1.0, 0.0],
+      [0.0, 0.0, 1.0]
+    ],
+    "empty_object": {},
+    "empty_list": [],
+    "null_field": null,
+    "zero": 0,
+    "negative": -9999,
+    "very_large": 99999999999999,
+    "very_small": 1e-300
+  },
+  {
+    "name": "special_characters_in_keys",
+    "gen-type": "pythia8",
+    "cross-section": "3.658e-04",
+    "n-files-bad": 0,
+    "key with spaces": "should still work",
+    "key.with.dots": "dot separated",
+    "key/with/slashes": "slash separated",
+    "UPPERCASE_KEY": "uppercase",
+    "MixedCaseKey": "mixed",
+    "123numeric_start": "numeric start",
+    "unicode_κey": "unicode in key",
+    "value_with_unicode": "αβγδ εζηθ ικλμ",
+    "value_with_special": "H→ZZ*→4ℓ @ √s=365 GeV",
+    "value_with_latex": "$e^+e^- \\rightarrow ZH \\rightarrow b\\bar{b}\\ell\\ell$",
+    "value_with_path": "/eos/experiment/fcc/ee/generation/../simulation/./edm4hep/",
+    "value_with_url": "https://fcc-physics.web.cern.ch/results?ecm=365&process=ZH"
+  },
+  {
+    "name": "conflicting_type_hints",
+    "ecm": 365,
+    "campaign": {
+      "name": "winter2023",
+      "id": 6,
+      "tags": ["official", "approved"],
+      "metadata": {
+        "created_by": "admin",
+        "approved_by": ["alice", "bob", "charlie"],
+        "approval_dates": {
+          "alice": "2025-01-01",
+          "bob": "2025-01-02",
+          "charlie": null
+        }
+      }
+    },
+    "generator": {
+      "name": "Pythia",
+      "version": 8.3,
+      "version_string": "8.306",
+      "tune": {
+        "name": "Monash",
+        "parameters": {
+          "StringPT:sigma": 0.335,
+          "StringZ:aLund": 0.68,
+          "StringZ:bLund": 0.98,
+          "BeamRemnants:primordialKThard": 1.8
+        }
+      },
+      "seed": 42,
+      "random_seeds": [42, 137, 1729, 31415]
+    },
+    "cuts": {
+      "pt_min": 0.0,
+      "pt_max": null,
+      "eta_max": 2.5,
+      "isolation": {
+        "cone_size": 0.4,
+        "pt_ratio_max": 0.1,
+        "strategy": "fixed_cone"
+      }
+    }
+  },
+  {
+    "name": "extremely_sparse",
+    "ecm": 91.2
+  },
+  {
+    "name": "extremely_dense",
+    "ecm": 240.0,
+    "stage": "reco",
+    "campaign": "summer2025",
+    "detector": "IDEA",
+    "generator": "Pythia8",
+    "tune": "Monash",
+    "process": "ZH",
+    "decay": "HWW",
+    "subdecay": "WW_semilep",
+    "n_events": 10000000,
+    "n_files": 100,
+    "n_files_good": 98,
+    "n_files_bad": 2,
+    "size_bytes": 980000000000,
+    "size_human": "980 GB",
+    "cross_section": 0.00723,
+    "cross_section_unit": "pb",
+    "cross_section_uncertainty": 0.00001,
+    "branching_ratio_H_WW": 0.2137,
+    "branching_ratio_W_lnu": 0.3257,
+    "branching_ratio_W_qq": 0.6743,
+    "filter_efficiency": 0.9987,
+    "filter_efficiency_error": 0.0001,
+    "k_factor": 1.0,
+    "matching_efficiency": 0.997,
+    "negative_weight_fraction": 0.0,
+    "status": "validated",
+    "priority": 1,
+    "is_signal": true,
+    "is_official": true,
+    "is_published": false,
+    "path_eos": "/eos/experiment/fcc/ee/",
+    "path_castor": null,
+    "path_tape": "/hsmstore/fcc/ee/",
+    "checksum_md5": "d41d8cd98f00b204e9800998ecf8427e",
+    "checksum_adler32": "00000001",
+    "created_by": "production-bot",
+    "validated_by": "alice",
+    "approved_by": "bob",
+    "contact": "alice@cern.ch",
+    "jira_ticket": "FCC-1234",
+    "zenodo_doi": null,
+    "inspire_id": null,
+    "notes": "Two bad files excluded from analysis. Resubmission pending.",
+    "key4hep_stack": "/cvmfs/sw.hsf.org/spackages6/key4hep-stack/2023-01-01/setup.sh",
+    "produced_with": "fcc-production-tools",
+    "production_version": "2.3.1",
+    "reconstruction_version": "0.8.0",
+    "analysis_framework": "FCCAnalyses",
+    "analysis_version": "0.9.0"
+  },
+  {
+    "name": "list_of_objects",
+    "runs": [
+      {"run_id": 1001, "status": "done", "n_events": 100000, "bad_files": []},
+      {"run_id": 1002, "status": "done", "n_events": 100000, "bad_files": ["file_003.root"]},
+      {"run_id": 1003, "status": "failed", "n_events": 0, "bad_files": ["file_001.root", "file_002.root"]},
+      {"run_id": 1004, "status": "running", "n_events": 45000, "bad_files": null}
+    ],
+    "summary": {
+      "total_runs": 4,
+      "completed": 2,
+      "failed": 1,
+      "running": 1,
+      "total_events": 345000
+    }
+  },
+  {
+    "name": "boolean_and_null_heavy",
+    "flags": {
+      "a": true,
+      "b": false,
+      "c": null,
+      "d": true,
+      "e": null,
+      "f": false
+    },
+    "optionals": {
+      "field1": null,
+      "field2": null,
+      "field3": "present",
+      "field4": null,
+      "field5": 0,
+      "field6": false,
+      "field7": "",
+      "field8": []
+    }
+  }
+]

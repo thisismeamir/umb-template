@@ -4,12 +4,12 @@ from app.models.entity.EntityRoute import EntityRoute
 from app.models.request.EntityRequestModel import EntityRequestModel
 
 from app.services.entity.EntityService import EntityService
-from app.repositories.entry.EntryRepository import EntryRepository
+from app.repositories.entry.EntityRepository import EntityRepository
 
 
 def makeServiceFor(route: EntityRoute):
     async def dependency(
-        repository: EntryRepository = Depends(Provider.entryRepository)
+        repository: EntityRepository = Depends(Provider.entryRepository)
     ) -> EntityService:
         return EntityService(route=route, repository=repository)
     return dependency
@@ -47,10 +47,17 @@ class EntityRootRouter:
         ):
             return await service.response(body)
 
-        @self._router.post("/hist")
-        async def hist(
+        @self._router.post("/get")
+        async def get(
             body: EntityRequestModel,
-            service: EntityService = Depends(makeServiceFor(EntityRoute.HIST)),
+            service: EntityService = Depends(makeServiceFor(EntityRoute.GET)),
+        ):
+            return await service.response(body)
+
+        @self._router.get("/rand")
+        async def random(
+            body: EntityRequestModel,
+            service: EntityService = Depends(makeServiceFor(EntityRoute.RAND)),
         ):
             return await service.response(body)
 

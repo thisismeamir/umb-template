@@ -6,4 +6,5 @@ class EntityRoute(str, Enum):
     QUERY   = "/query"
     SEARCH  = "/search"
     STAT    = "/stat"
-    HIST    = "/hist"
+    GET    = "/get"
+    RAND    = "/rand"

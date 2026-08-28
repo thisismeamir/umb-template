@@ -15,6 +15,8 @@ class EntityRequestValidator:
         self.checkSortWithRandom()
         self.checkPageRequiresOrder()
         return self.result
+    def validateRand(self) -> ValidationResult:
+        return self.result
 
     def checkEmpty(self) -> None:
         if not self.request.model_fields_set:
