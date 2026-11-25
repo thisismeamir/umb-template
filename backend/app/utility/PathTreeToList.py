@@ -1,9 +1,9 @@
-from more_itertools.recipes import flatten
+from __future__ import annotations
 
-from app.models.request.PathTrees import MetadataPathTree
+from typing import Any
 
 
-def pathTreeToList(pathTree: dict) -> list:
+def pathTreeToList(pathTree: dict[str, Any]) -> list[list[str]]:
     """
     Transforms a nested dictionary into a list of paths,
     preserving the order [Root, Child, Grandchild].
@@ -11,23 +11,24 @@ def pathTreeToList(pathTree: dict) -> list:
     if not isinstance(pathTree, dict):
         raise TypeError("Input must be a dictionary")
 
-    subkeys = []
+    subkeys: list[list[str]] = []
 
     for key, value in pathTree.items():
         if isinstance(value, dict) and value:
-            # Recurse: get the paths from the children
             children_paths = pathTreeToList(value)
-
-            # Prepend the current key to each path returned from deeper levels
             for path in children_paths:
                 subkeys.append([key] + path)
-        else:
-            # Leaf node or empty dict: start a new path list
+        elif isinstance(value, dict):
             subkeys.append([key])
+        else:
+            raise TypeError(
+                f"Path tree leaves must be empty dicts, got {type(value).__name__} at '{key}'"
+            )
 
     return subkeys
 
-def conditionTreeToList(conditionTree: dict) -> list[tuple[list[str], str]]:
+
+def conditionTreeToList(conditionTree: dict[str, Any]) -> list[tuple[list[str], str]]:
     """
     Transforms a nested condition dictionary into a list of
     (path, condition) pairs, preserving [Root, Child, Grandchild] order.
@@ -35,9 +36,11 @@ def conditionTreeToList(conditionTree: dict) -> list[tuple[list[str], str]]:
     if not isinstance(conditionTree, dict):
         raise TypeError("Input must be a dictionary")
 
-    entries = []
+    entries: list[tuple[list[str], str]] = []
     for key, value in conditionTree.items():
         if isinstance(value, dict):
+            if not value:
+                raise TypeError(f"Condition tree object at '{key}' cannot be empty")
             children = conditionTreeToList(value)
             for path, condition in children:
                 entries.append(([key] + path, condition))
@@ -46,18 +49,3 @@ def conditionTreeToList(conditionTree: dict) -> list[tuple[list[str], str]]:
         else:
             raise TypeError(f"leaf must be str, got {type(value).__name__}")
     return entries
-
-
-
-
-if __name__ == '__main__':
-    # A testing nested dictionary
-    pathTree = {
-        "Root": {
-            "Child 1": {
-                "Child 2": "something else"
-            }
-        }
-    }
-
-    print(conditionTreeToList(pathTree))

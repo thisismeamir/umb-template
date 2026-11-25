@@ -1,14 +1,14 @@
-from typing import List
+from __future__ import annotations
 
 from pydantic import BaseModel
 
-from app.models.entry.EntryFieldModel import EntityFieldModel
-from app.models.entry.EntryFilterModel import EntityFilterModel
-from app.models.entry.EntryOptionModel import EntityOptionModel
+from app.models.entry.EntryFieldModel import EntryFieldModel
+from app.models.entry.EntryFilterModel import EntryFilterModel
+from app.models.entry.EntryOptionModel import EntryOptionModel
 
 
-class EntityQueryModel(BaseModel):
+class EntryQueryModel(BaseModel):
     entry_type: str
-    fields:  List[EntityFieldModel]
-    filters: List[EntityFilterModel]
-    options: List[EntityOptionModel]
+    fields: list[EntryFieldModel]
+    filters: list[EntryFilterModel]
+    options: list[EntryOptionModel]

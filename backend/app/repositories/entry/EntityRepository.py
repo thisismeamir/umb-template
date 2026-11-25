@@ -1,27 +1,23 @@
-import asyncpg
+from __future__ import annotations
 
 import json
 from typing import Any
 
-import asyncpg
-
 
 class EntityRepository:
-    def __init__(self, db: asyncpg.Connection) -> None:
+    """Data access wrapper over an asyncpg connection."""
+
+    def __init__(self, db: Any) -> None:
         self.db = db
 
     async def executeQuery(
         self,
         sql: str,
-        params: list,
+        params: list[Any],
     ) -> list[dict[str, Any]]:
         rows = await self.db.fetch(sql, *params)
-
         return [
-            {
-                key: self._normalize(value)
-                for key, value in dict(row).items()
-            }
+            {key: self._normalize(value) for key, value in dict(row).items()}
             for row in rows
         ]
 
@@ -37,9 +33,6 @@ class EntityRepository:
             return [EntityRepository._normalize(v) for v in value]
 
         if isinstance(value, dict):
-            return {
-                key: EntityRepository._normalize(v)
-                for key, v in value.items()
-            }
+            return {key: EntityRepository._normalize(v) for key, v in value.items()}
 
         return value

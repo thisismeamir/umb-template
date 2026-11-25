@@ -1,13 +1,15 @@
 from __future__ import annotations
-from datetime import datetime
+
+from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
+
 from pydantic import BaseModel, Field
 
 
 class ApiInformation(BaseModel):
     version: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     requestId: str = Field(default_factory=lambda: str(uuid4()))
 
 
@@ -27,7 +29,7 @@ class ValidationResult(BaseModel):
 class AggregateResult(BaseModel):
     fn: str
     path: list[str]
-    value: int | float
+    value: float | int | None
 
 
 class DistinctResult(BaseModel):

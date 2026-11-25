@@ -14,8 +14,8 @@ export enum HttpStatusCode {
     FORBIDDEN = 403,
     NOT_FOUND = 404,
     INTERNAL_SERVER_ERROR = 500,
+    NOT_IMPLEMENTED = 501,
 }
-
 /**
  * API Error response structure
  */
@@ -251,3 +251,210 @@ export interface BulkOperationResult {
 }
 
 // Export Entity as primary interface
+
+
+// -----------------------------------------------------------------------------
+// API v1 Contracts (/api/v1/*)
+// -----------------------------------------------------------------------------
+
+export type V1MetadataPathTree = Record<string, unknown>;
+export type V1MetadataConditionTree = Record<string, unknown>;
+export type V1ExportFormat = "csv" | "json" | "yaml" | "toml" | "python";
+
+export interface V1EntityRequest {
+    contains?: V1MetadataPathTree;
+    without?: V1MetadataPathTree;
+    take?: V1MetadataPathTree;
+    where?: V1MetadataConditionTree;
+    search?: string;
+    get?: { first?: number; last?: number; random?: number; uniform?: number };
+    sort?: { by: V1MetadataPathTree; order?: "asc" | "desc" };
+    page?: { size: number; cursor?: string };
+    aggregate?: { by: V1MetadataPathTree; fn: "count" | "avg" | "min" | "max" | "sum" };
+    distinct?: V1MetadataPathTree;
+    count?: boolean;
+    entry_type?: string | string[];
+    id?: string;
+    version?: number;
+    versions?: { last?: number; first?: number; by?: string; type?: string; before?: string; after?: string };
+    snapshot?: string;
+}
+
+export interface V1RawEntityRow {
+    id: string;
+    metadata: Record<string, unknown>;
+    entry_type?: string;
+    [key: string]: unknown;
+}
+
+export interface V1Response {
+    apiInformation: { version: string; timestamp: string; requestId: string };
+    validationResult: { valid: boolean; errors: string[]; warnings: string[] };
+    status?: string;
+    entities?: V1RawEntityRow[];
+    returned?: number;
+    total?: number;
+    count?: number;
+    aggregate?: { fn: string; path: string[]; value: number | null };
+    distinct?: { path: string[]; values: unknown[] };
+    versions?: Array<{ id: string; version: number; createdAt: string; createdBy: string; source: string }>;
+    nextCursor?: string | null;
+    hasMore?: boolean | null;
+}
+
+export interface V1NavigationItem {
+    name: string;
+    count: number;
+    entryTypes: string[];
+}
+
+export interface V1NavigationResponse {
+    category: string;
+    field: string;
+    items: V1NavigationItem[];
+    total: number;
+}
+
+export interface V1FieldRegistryEntry {
+    entryType: string;
+    key: string;
+    valueType: string;
+    source: string;
+}
+
+export interface V1FieldRegistryResponse {
+    fields: V1FieldRegistryEntry[];
+    total: number;
+}
+
+export interface V1SearchHit {
+    id: string;
+    entryType: string;
+    score: number;
+    matchedFields: string[];
+    metadata: Record<string, unknown>;
+}
+
+export interface V1FulltextSearchResponse {
+    query: string;
+    hits: V1SearchHit[];
+    total: number;
+}
+
+export interface V1SimilarSearchResponse {
+    sourceId: string;
+    hits: V1SearchHit[];
+    total: number;
+}
+
+export interface V1SuggestResponse {
+    field: string;
+    prefix: string;
+    suggestions: string[];
+    total: number;
+}
+
+export interface V1HistogramRequest {
+    field: V1MetadataPathTree;
+    bins?: number;
+    entry_type?: string | string[];
+    where?: V1MetadataConditionTree;
+}
+
+export interface V1HistogramResponse {
+    path: string[];
+    bins: Array<{ lower: number; upper: number; count: number }>;
+    totalValues: number;
+    min: number | null;
+    max: number | null;
+}
+
+export interface V1SummaryRequest {
+    groupBy: V1MetadataPathTree;
+    metric?: V1MetadataPathTree;
+    entry_type?: string | string[];
+    where?: V1MetadataConditionTree;
+}
+
+export interface V1SummaryResponse {
+    groupBy: string[];
+    metric: string[] | null;
+    groups: Array<{ group: unknown; count: number; sum?: number | null; mean?: number | null; min?: number | null; max?: number | null }>;
+    totalEntries: number;
+}
+
+export interface V1CompareRequest {
+    groupA: V1EntityRequest;
+    groupB: V1EntityRequest;
+    metrics: V1MetadataPathTree[];
+}
+
+export interface V1CompareResponse {
+    countA: number;
+    countB: number;
+    deltas: Array<{ path: string[]; meanA: number | null; meanB: number | null; delta: number | null; ratio: number | null }>;
+}
+
+export interface V1CoverageResponse {
+    rowField: string[];
+    colField: string[];
+    cells: Array<{ row: unknown; col: unknown; count: number }>;
+    totalEntries: number;
+}
+
+export interface V1TokenResponse {
+    accessToken: string;
+    refreshToken: string;
+    tokenType: string;
+    expiresIn: number;
+}
+
+export interface V1UserPrincipal {
+    username: string;
+    roles: string[];
+    authenticated: boolean;
+}
+
+export interface V1AuthStatusResponse {
+    authEnabled: boolean;
+    authenticated: boolean;
+    user: V1UserPrincipal | null;
+}
+
+export interface V1CollectionSummary {
+    id: string;
+    name: string;
+    description: string;
+    owner: string;
+    isPublic: boolean;
+    memberCount: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface V1CollectionDetail extends V1CollectionSummary {
+    entryIds: string[];
+}
+
+export interface V1CollectionListResponse {
+    collections: V1CollectionSummary[];
+    total: number;
+}
+
+export interface V1JobRecord {
+    id: string;
+    taskType: "export" | "analytics_histogram" | "analytics_summary";
+    status: "pending" | "running" | "done" | "failed";
+    owner: string;
+    error?: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface V1JobResultResponse {
+    id: string;
+    taskType: "export" | "analytics_histogram" | "analytics_summary";
+    status: "pending" | "running" | "done" | "failed";
+    result?: unknown;
+    error?: string | null;
+}

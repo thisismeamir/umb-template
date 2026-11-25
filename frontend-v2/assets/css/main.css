@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme {
+  /* Single FCC accent + monochrome IBM Carbon neutral scale */
+  --color-fcc: #009FDA;
+  --color-fcc-hover: #0082B3;
+  --color-fcc-soft: #E6F6FC;
+  --color-fcc-border: #8CD8F3;
+
+  --color-carbon-100: #161616;
+  --color-carbon-90: #262626;
+  --color-carbon-80: #393939;
+  --color-carbon-60: #6F6F6F;
+  --color-carbon-50: #8D8D8D;
+  --color-carbon-30: #C6C6C6;
+  --color-carbon-20: #E0E0E0;
+  --color-carbon-10: #F4F4F4;
+
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  html,
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-carbon-10);
+    color: var(--color-carbon-100);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  code,
+  pre,
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
